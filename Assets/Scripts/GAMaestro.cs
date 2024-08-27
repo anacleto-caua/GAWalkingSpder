@@ -31,7 +31,6 @@ public class GAMaestro : MonoBehaviour
         {
             IndsOBJ.Add(InstantiateIndividual());
             individuals.Add(IndsOBJ[i].GetComponent<IndividualMovement>());
-            individuals[i].SetTransforms();
         }
     }
 
