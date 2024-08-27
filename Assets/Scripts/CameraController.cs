@@ -6,6 +6,11 @@ using UnityEngine.Experimental.Video;
 using UnityEngine.PlayerLoop;
 using UnityEngine.UI;
 
+/**
+ * Esta classe é responsável por controlar a câmera do usuário.
+ * Andar com WASD, olhar com o mouse e subir e descer com Q e E.
+ * 
+ */
 public class CameraController : MonoBehaviour
 {
     #region movementVars

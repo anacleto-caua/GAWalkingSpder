@@ -4,18 +4,24 @@ using UnityEngine;
 
 public class GAMaestro : MonoBehaviour
 {
+    /**
+     * Esta classe é responsável por controlar o fluxo do algoritmo genético.
+     * 
+     */
 
+    // Variáveis de configuração (são definidas no editor, mudar lá)
     public int individualsSize = 10;
-    public float roundTimer;
-
     public float timePerRound = 15; // seconds
-    public int rounds = 0;
 
+    // Variáveis de controle
+    public int rounds = 0;
+    public float roundTimer;
     public bool pause = false;
 
     List<IndividualMovement> individuals;
     List<GameObject> IndsOBJ;
 
+    // É o metódo chamado quando se cria a classe, cria os indivíduos e os coloca no array individuals
     void Start()
     {
         individuals = new List<IndividualMovement>();
@@ -29,6 +35,12 @@ public class GAMaestro : MonoBehaviour
         }
     }
 
+    /**
+     * Update é chamado a cada frame, 
+     * controla o tempo limite de cada rodada
+     * e chama o método de finalização de rodada
+     * 
+     */
     void Update()
     {
         roundTimer -= Time.deltaTime;
@@ -42,24 +54,25 @@ public class GAMaestro : MonoBehaviour
         }
     }
 
+    // A rodada termina, pausa os indivíduos, mede a pontuação, ordena os indivíduos, cruza os indivíduos e reseta as posições
     public void RoundFinished()
     {
-        //Pause individuals
+        // Pausa os individuos
         foreach (IndividualMovement ind in individuals)
         {
             ind.Pause();
         }
 
-        //Get the pontuations
+        // Mede a pontuação de cada indivíduo
         foreach (IndividualMovement ind in individuals)
         {
             ind.MeasureScore(transform);
         }
 
-        //Order the individuals
+        // Ordena os indivíduos
         individuals.Sort();
 
-        //Breeding lesser ones out
+        // Cruza os indivíduos sobreescrevendo os indivíduos com pontuação mais baixa
         int idDad = 0;
         int idMom = 1;
         for (int i = 0; i < individualsSize/2; i++)
@@ -75,6 +88,7 @@ public class GAMaestro : MonoBehaviour
             }
         }
 
+        /*
         Debug.Log("debug pos breed");
         Debug.Log(individuals[0].score);
         Debug.Log(individuals[1].score);
@@ -83,8 +97,9 @@ public class GAMaestro : MonoBehaviour
         Debug.Log(individuals[individualsSize - 2].score);
         Debug.Log(individuals[individualsSize - 1].score);
         Debug.Log("debug pos breed");
+        */
 
-        //Reset positions
+        // Reinicia as posições dos indivíduos
         for (int i = 0; i < individualsSize; i++)
         {
             GameObject IndObj = InstantiateIndividual();
@@ -96,7 +111,7 @@ public class GAMaestro : MonoBehaviour
             individuals[i] = indM;
         }
 
-        // UnPause individuals
+        // Despausa os indivíduos e o round vai rodar automaticamente no próximo update
         foreach (IndividualMovement ind in individuals)
         {
             ind.UnPause();

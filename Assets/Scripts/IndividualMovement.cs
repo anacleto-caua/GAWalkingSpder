@@ -1,153 +1,13 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using Unity.Properties;
-using UnityEditor.Animations;
 using UnityEngine;
-using UnityEngine.Animations.Rigging;
 
+/**
+ * Esta classe é responsável por controlar o movimento de um indivíduo.
+ */
 public class IndividualMovement : MonoBehaviour, IComparable<IndividualMovement>
 {
-    public class LegController
-    {
-        //Control
-        public GameObject LegObj;
-        public TwoBoneIKConstraint LegConstraint;
-        public Transform LegIk;
-        public int step = 0;
-        public bool lastMoveFinished = false;
-
-        //Movs
-        public int genes;
-        public float mutationChance = 0;
-        public List<Vector3> Movements;
-
-        //Status
-        public Vector3 target;
-        public float tolerance = .03f;
-        public float displacement = .7f;
-        public float speed = .3f;
-
-        public LegController(GameObject LegObj,
-            float tolerance,
-            float displacement,
-            float speed,
-            int genes,
-            float mutationChance
-            )
-        {
-            //Control
-            this.LegObj = LegObj;
-            LegConstraint = LegObj.GetComponent<TwoBoneIKConstraint>();
-            LegIk = LegConstraint.data.target;
-
-            //GA
-            this.genes = genes;
-            this.mutationChance = mutationChance;
-
-            //Status
-            this.tolerance = tolerance;
-            this.displacement = displacement;
-            this.speed = speed;
-
-            GenerateDna();
-            NextTarget();
-        }
-
-        public void Breed(LegController dad, LegController mom)
-        {
-            for(int i = 0; i < genes; i++)
-            {
-                if(UnityEngine.Random.Range(0, 2) == 0)
-                {
-                    Movements[i] = dad.Movements[i];
-                }
-                else
-                {
-                    Movements[i] = mom.Movements[i];
-                }
-
-                if (RandomPercent(mutationChance))
-                {
-                    Movements[i] = RandomDir();
-                }
-            }
-        }
-
-        public void GenerateDna()
-        {
-            Movements = new List<Vector3>();
-
-            for(int i = 0; i < genes; i++)
-            {
-                Movements.Add(RandomDir());
-            }
-        }
-
-        public Vector3 RandomDir()
-        {
-            return new Vector3(UnityEngine.Random.Range(-1f, 1f), 0, UnityEngine.Random.Range(-1f, 1f)).normalized;
-        }
-
-        public bool RandomPercent(float chance)
-        {
-            return UnityEngine.Random.Range(0, 100) <= chance;
-        }
-
-        public void Move()
-        {
-            lastMoveFinished = false;
-            if (target != LegIk.position)
-            {
-                LegIk.position = Vector3.MoveTowards(LegIk.position, target, speed * Time.deltaTime);
-            }
-            else
-            {
-                if (Vector3.Distance(LegConstraint.data.tip.position, target) > tolerance)
-                {
-                    // If the target is unreachable the movement will be unmade
-                    LegIk.position -= Movements[step] * displacement;
-                }
-
-                step++;
-                if (step >= Movements.Count)
-                {
-                    step = 0;
-                }
-                NextTarget();
-
-                lastMoveFinished = true;
-            }
-        }
-
-        public void NextTarget()
-        {
-            target = LegIk.position + Movements[step] * displacement;
-        }
-
-    }
-
-    public class TransformsToReset
-    {
-        public Transform target;
-        public Vector3 position;
-        public Quaternion rotation;
-
-        public TransformsToReset(Transform target, Vector3 position, Quaternion rotation)
-        {
-            this.target = target;
-            this.position = position;
-            this.rotation = rotation;
-        }
-
-        public void ResetPosition()
-        {
-            this.target.position = position;
-            this.target.rotation = rotation;
-        }
-    }
-
+    // Variáveis de controle
     public GameObject Leg1Obj;
     public GameObject Leg2Obj;
     public GameObject Leg3Obj;
@@ -160,19 +20,16 @@ public class IndividualMovement : MonoBehaviour, IComparable<IndividualMovement>
     public Transform BodyRoot;
 
     public bool paused = false;
-
-    public List<TransformsToReset> transformsToReset;
-
-    //LegStatus
-    public float tolerance = .3f;
-    public float displacement = .7f;
-    public float speed = .3f;
-
-    //GA
-    public int genes = 5;
-    public float mutationChance = 20f;
     public float score = 0;
 
+    // Variáveis de status das pernas
+    public float tolerance = .3f; // Distância máxima do alvo para considerar que chegou
+    public float displacement = .7f; // Distância movida por target
+    public float speed = .3f; // Distância movida por frame
+    public float mutationChance = 20f; // Chance de mutação por gene
+    public int genes = 5; // Quantidade de genes por indivíduo
+
+    // Primeiro método chamado, cria as pernas
     void Awake()
     {
         Legs = new List<LegController>
@@ -184,6 +41,17 @@ public class IndividualMovement : MonoBehaviour, IComparable<IndividualMovement>
         };
     }
 
+    /**
+     * Controla o movimento do indivíduo a cada frame.
+     * 
+     * Se está pausado ignora a execução
+     * 
+     * Se o último movimento foi terminado, passa para o próximo movimento da próxima perna
+     * 
+     * Se não houver mais pernas, volta para a primeira
+     * 
+     * Ao fim executa o movimento da perna atual
+     */
     private void Update()
     {
         if (paused){
@@ -201,21 +69,7 @@ public class IndividualMovement : MonoBehaviour, IComparable<IndividualMovement>
         Legs[legsStep].Move();
     }
 
-    public void SetTransforms()
-    {
-        transformsToReset = new List<TransformsToReset>
-        {
-            new TransformsToReset(transform, Vector3.zero, transform.rotation)
-        };
-
-        foreach (Transform child in this.transform)
-        {
-            Debug.Log("Childs: " + child);
-            transformsToReset.Add(new TransformsToReset(child.transform, child.position, child.rotation));
-        }
-
-    }
-
+    // Função de ponte para chamar o movimento de breed das pernas
     public void Breed(IndividualMovement dad, IndividualMovement mom)
     {
         for(int i = 0; i < Legs.Count; i++)
@@ -224,17 +78,20 @@ public class IndividualMovement : MonoBehaviour, IComparable<IndividualMovement>
         }
     }
 
+    // Calcula a distância do indíviduo para o mastro de alvo
     public void MeasureScore(Transform mastro)
     {
         this.score = Vector3.Distance(mastro.position, BodyRoot.position);
     }
 
+    // Função de comparação para ordenação de indivíduos
     public int CompareTo(IndividualMovement other)
     {
         // Sort by score in ascending order
         return this.score.CompareTo(other.score);
     }
 
+    #region handyFunctionsToPauseUnpause
     public void Pause()
     {
         paused = true;
@@ -244,22 +101,9 @@ public class IndividualMovement : MonoBehaviour, IComparable<IndividualMovement>
     {
         paused = false;
     }
+    #endregion handyFunctionsToPauseUnpause
 
-    public void Reset()
-    {
-        this.GetComponent<Animator>().enabled = false;
-        //this.enabled = false;
-
-        foreach (TransformsToReset tr in transformsToReset)
-        {
-            tr.ResetPosition();
-        }
-
-        this.enabled = true;
-        this.GetComponent<Animator>().enabled = true;
-
-    }
-
+    // Gambiarra pra poder resetar a posição do indíviduo
     public void OverrideData(IndividualMovement ind)
     {
         Legs[0].Movements = ind.Legs[0].Movements;
